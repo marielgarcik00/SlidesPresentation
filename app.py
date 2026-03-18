@@ -13,7 +13,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"))
+
+import app_config
+
 from slides_automation import GoogleSlidesAutomation
+from llm.config import batch_chunk_size
 from gemini_parser import (
     ask_gemini,
     ask_gemini_title_and_subtitles,
@@ -28,8 +34,6 @@ from context_service import (
     get_template_and_placeholders_by_identifier,
 )
 
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(dotenv_path=os.path.join(PROJECT_ROOT, ".env"))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -143,7 +147,9 @@ def run_segment_and_assign(
             filled = ask_gemini_batch_for_slides(pending_jobs)
             while len(filled) < len(pending_jobs):
                 filled.append({})
-            logger.info("Relleno batch: %s slides en ~%s llamada(s) a Gemini", len(pending_jobs), 1 + (len(pending_jobs) - 1) // 6)
+            ch = batch_chunk_size()
+            n_calls = (len(pending_jobs) + ch - 1) // ch
+            logger.info("Relleno batch: %s slides → %s llamada(s) (hasta %s slides/call)", len(pending_jobs), n_calls, ch)
         else:
             first = True
             for job in pending_jobs:
@@ -287,12 +293,12 @@ class AskGeminiRequest(BaseModel):
 #  Solicitud: texto + URL de presentación para segmentar y asignar cada parte a una slide
 class SegmentAndAssignRequest(BaseModel):
     text: str
-    presentation_url: str
+    presentation_url: str = ""
 
-#Solicitud: URL plantilla + carpeta Drive + nombre opcional + resultado de segment-and-assign
+# Solicitud: si faltan URL/nombre, se usan los de app_config.py
 class GenerateCopyFromSegmentRequest(BaseModel):
-    presentation_url: str
-    folder_url_or_id: str
+    presentation_url: str = ""
+    folder_url_or_id: str = ""
     new_name: str = None
     slides_used: List[Dict]
 
@@ -328,12 +334,23 @@ async def root():
         "service": "Slides desde texto",
         "version": "1.0.0",
         "endpoints": {
+            "config": "GET /api/config",
             "health": "GET /api/health",
             "ask_gemini": "POST /api/ask-gemini",
             "ask_gemini_structure": "POST /api/ask-gemini-structure",
             "segment_and_assign": "POST /api/segment-and-assign-slides",
             "generate_copy": "POST /api/generate-copy-from-segment",
         },
+    }
+
+
+@app.get("/api/config")
+async def api_config():
+    """Defaults de app_config (plantilla, carpeta, nombre) para el frontend."""
+    return {
+        "default_presentation_url": app_config.DEFAULT_PRESENTATION_URL,
+        "default_folder_url": app_config.DEFAULT_DRIVE_FOLDER_URL,
+        "default_new_name": app_config.DEFAULT_NEW_NAME,
     }
 
 # Comprueba que el servicio esté activo y que exista el archivo de credenciales
@@ -389,11 +406,11 @@ async def segment_and_assign_slides_endpoint(request: SegmentAndAssignRequest):
     text = (request.text or "").strip()
     if not text:
         raise HTTPException(status_code=400, detail="El texto no puede estar vacío.")
-    url = (request.presentation_url or "").strip()
+    url = (request.presentation_url or "").strip() or app_config.DEFAULT_PRESENTATION_URL
     if not url or "docs.google.com/presentation" not in url or "/d/" not in url:
         raise HTTPException(
             status_code=400,
-            detail="Se necesita la URL de la presentación de Google Slides.",
+            detail="Configurá la URL de la plantilla en app_config.py (DEFAULT_PRESENTATION_URL) o pegala en el formulario.",
         )
     try:
         context_summary = get_context_summary_for_segmenter()
@@ -415,10 +432,13 @@ async def segment_and_assign_slides_endpoint(request: SegmentAndAssignRequest):
         delay_between_calls = int(os.getenv("GEMINI_DELAY_BETWEEN_CALLS", "20"))
         batch_on = os.getenv("GEMINI_BATCH_SLIDES", "true").lower() in ("1", "true", "yes")
         if batch_on:
-            n_batch = 1 + (max(0, len(segments) - 1) // 6)
+            ch = batch_chunk_size()
+            # peor caso: un job por segmento (sin conocer pending exacto antes)
+            n_fill = max(1, len(segments))
+            n_batch = (n_fill + ch - 1) // ch
             logger.info(
-                "Dividir y asignar: %s segmentos → ~%s llamadas Gemini (1 segmentar + %s batch relleno)",
-                len(segments), 1 + n_batch, n_batch,
+                "Dividir y asignar: %s segmentos → ~%s llamadas Gemini (1 segmentar + ≤%s batch, chunk=%s)",
+                len(segments), 1 + n_batch, n_batch, ch,
             )
         else:
             logger.info(
@@ -450,14 +470,14 @@ async def segment_and_assign_slides_endpoint(request: SegmentAndAssignRequest):
 # y rellena cada slide con su json_for_slide. Elimina los $ de cada slide.
 @app.post("/api/generate-copy-from-segment")
 async def generate_copy_from_segment_endpoint(request: GenerateCopyFromSegmentRequest):
-    url = (request.presentation_url or "").strip()
+    url = (request.presentation_url or "").strip() or app_config.DEFAULT_PRESENTATION_URL
     if not url or "docs.google.com/presentation" not in url or "/d/" not in url:
-        raise HTTPException(status_code=400, detail="URL de presentación inválida.")
-    folder = (request.folder_url_or_id or "").strip()
+        raise HTTPException(status_code=400, detail="URL de presentación inválida o vacía en app_config.")
+    folder = (request.folder_url_or_id or "").strip() or app_config.DEFAULT_DRIVE_FOLDER_URL
     if not folder:
         raise HTTPException(
             status_code=400,
-            detail="Indicá la carpeta de Drive (URL o ID) donde guardar la copia.",
+            detail="Configurá la carpeta en app_config.py (DEFAULT_DRIVE_FOLDER_URL) o indicá URL/ID de Drive.",
         )
     slides_used = request.slides_used or []
     if not slides_used:
@@ -472,7 +492,7 @@ async def generate_copy_from_segment_endpoint(request: GenerateCopyFromSegmentRe
             automation=automation,
             presentation_url=url,
             folder_url_or_id=folder,
-            new_name=request.new_name or "Presentación generada desde texto",
+            new_name=(request.new_name or "").strip() or app_config.DEFAULT_NEW_NAME,
             slides_used=slides_used,
         )
         return {

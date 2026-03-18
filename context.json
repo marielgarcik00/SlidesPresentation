@@ -1,0 +1,52 @@
+{
+  "slides_context": {
+    "$cover_presentation": {
+      "finalidad": "Presentación general del tema, título principal y footer corporativo.",
+      "marcadores": {
+        "#main_title": "Nombre del proyecto o título central.",
+        "#footer_context": "Información de la compañía o avisos legales."
+      }
+    },
+    "$chapter_cover": {
+      "finalidad": "Numeración de secciones en orden lógico y título de sección.",
+      "marcadores": {
+        "#chapter_number": "Número del capítulo actual (ej: 01, Capítulo 1).",
+        "#section_title": "Nombre de la sección o tema a tratar."
+      }
+    },
+    "$descriptive_presentation": {
+      "finalidad": "Desarrollo de un concepto único con título y descripción clara.",
+      "instrucciones": "main_title = título o tema general (pocas palabras, máx. 3–5). description = todo el desarrollo o cuerpo del texto. NO rellenar por orden: el título puede estar al INICIO o al FINAL del texto.",
+      "few_shot_ejemplo": "Si el texto es 'Monster: es una bebida... Red bull: es otra bebida... Bebidas energeticas' → main_title=\"Bebidas energeticas\", description=\"Monster: es una bebida... Red bull: es otra bebida...\".",
+      "marcadores": {
+        "#main_title": "Título corto que resume el tópico (puede estar al inicio o al final del texto).",
+        "#description": "Párrafo descriptivo: todo el desarrollo, bloques largos, contenido."
+      }
+    },
+    "$three_items_list": {
+      "finalidad": "Tres puntos clave: cada uno con un título y una descripción.",
+      "instrucciones": "Cada clave tiene un SIGNIFICADO: item_1_title = nombre del primer ítem, item_1_description = descripción del primer ítem, etc. Asigná el fragmento que corresponda por significado.",
+      "few_shot_ejemplo": "Entrada: 1. GTM: google tag manager. 2 GA4: Google analitics. 3 PBI: Power BI. -> Salida: item_1_title=\"GTM\", item_1_description=\"google tag manager\", item_2_title=\"GA4\", item_2_description=\"Google analitics\", item_3_title=\"PBI\", item_3_description=\"Power BI\".",
+      "marcadores": {
+        "#item_1_title": "Título o nombre del primer punto.",
+        "#item_1_description": "Descripción del primer punto.",
+        "#item_2_title": "Título o nombre del segundo punto.",
+        "#item_2_description": "Descripción del segundo punto.",
+        "#item_3_title": "Título o nombre del tercer punto.",
+        "#item_3_description": "Descripción del tercer punto."
+      }
+    },
+    "$comparative_two_differences": {
+      "finalidad": "Slide de comparación entre dos temas. Título general y dos temas con nombre y descripción.",
+      "instrucciones": "NO rellenar en orden. main_title = título general; column_1_title/column_1_description = primer tema; column_2_title/column_2_description = segundo tema.",
+      "few_shot_ejemplo": "Entrada: Frutas. Manzana: roja. Pera: verde. -> Salida: main_title=\"Frutas\", column_1_title=\"Manzana\", column_1_description=\"roja\", column_2_title=\"Pera\", column_2_description=\"verde\"",
+      "marcadores": {
+        "#main_title": "SOLO el título general de la slide. No el contenido de las columnas.",
+        "#column_1_title": "SOLO el nombre del PRIMER tema. No la descripción.",
+        "#column_1_description": "SOLO la descripción del PRIMER tema.",
+        "#column_2_title": "SOLO el nombre del SEGUNDO tema. No la descripción.",
+        "#column_2_description": "SOLO la descripción del SEGUNDO tema."
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+# Secretos y entorno local (no subir nunca)
+.env
+.env.local
+.env.*.local
+credentials.json
+client_secret.json
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

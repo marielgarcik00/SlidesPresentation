@@ -176,6 +176,7 @@
 
     <div class="section">
       <h2>URLs</h2>
+      <p class="muted" style="margin-top:0;">Se cargan desde <code>app_config.py</code> (podés cambiarlas aquí o en el formulario).</p>
       <label for="presentation_url">URL de la presentación plantilla (Google Slides)</label>
       <input type="url" id="presentation_url" placeholder="https://docs.google.com/presentation/d/.../edit" />
       <label for="folder_url">URL de la carpeta de Drive donde guardar la copia</label>
@@ -202,7 +203,7 @@
 
     <div class="section">
       <h2>3. Dividir y asignar a slides</h2>
-      <p class="muted">El texto se divide en partes y cada parte se asigna a una plantilla de slide. Necesita URL de la presentación.</p>
+      <p class="muted">Usa la plantilla de <code>app_config</code> si el campo URL está vacío.</p>
       <div class="step-actions">
         <button type="button" class="btn" id="btn-segment" data-loading="0">Dividir y asignar</button>
       </div>
@@ -217,7 +218,7 @@
 
     <div class="section">
       <h2>4. Generar copia en Drive</h2>
-      <p class="muted">Crea una copia en la carpeta indicada, con las slides elegidas y rellenadas. Necesita URL de la carpeta y haber ejecutado el paso 3.</p>
+      <p class="muted">Carpeta por defecto desde <code>app_config</code>. Paso 3 debe estar hecho.</p>
       <div class="step-actions">
         <button type="button" class="btn" id="btn-generate" data-loading="0">Generar copia</button>
       </div>
@@ -227,6 +228,16 @@
 
   <script>
     const API = "";
+    let serverConfig = { default_presentation_url: "", default_folder_url: "", default_new_name: "" };
+    (async function loadServerDefaults() {
+      try {
+        const r = await fetch(API + "/api/config");
+        if (r.ok) serverConfig = await r.json();
+        const pu = el("presentation_url"), fu = el("folder_url");
+        if (pu && serverConfig.default_presentation_url && !pu.value.trim()) pu.value = serverConfig.default_presentation_url;
+        if (fu && serverConfig.default_folder_url && !fu.value.trim()) fu.value = serverConfig.default_folder_url;
+      } catch (e) {}
+    })();
 
     function el(id) { return document.getElementById(id); }
     function setLoading(btn, loading) {
@@ -291,14 +302,14 @@
     el("btn-segment").setAttribute("data-original-text", "Dividir y asignar");
     el("btn-segment").addEventListener("click", async () => {
       const text = el("text").value.trim();
-      const presentation_url = el("presentation_url").value.trim();
+      const presentation_url = el("presentation_url").value.trim() || serverConfig.default_presentation_url || "";
       if (!text) { showError("out-segment", "Escribí o pegá texto primero."); return; }
       if (!presentation_url || !presentation_url.includes("docs.google.com/presentation")) {
-        showError("out-segment", "Indicá la URL de la presentación plantilla (Google Slides)."); return;
+        showError("out-segment", "Configurá la plantilla en app_config.py o pegá la URL de Slides."); return;
       }
       setLoading("btn-segment", true);
       try {
-        const data = await post("/api/segment-and-assign-slides", { text, presentation_url });
+        const data = await post("/api/segment-and-assign-slides", { text, presentation_url: el("presentation_url").value.trim() });
         lastSegmentPayload = data;
         const segments = (data.segments || []).map(s =>
           "<li><strong>" + (s.template || "?") + "</strong> (slide " + (s.slide_index ?? "—") + ") — " + (s.text_preview || "").replace(/</g, "&lt;") + "</li>"
@@ -312,8 +323,8 @@
         // Mostrar el JSON que se enviará en el paso 4
         const jsonPreview = {
           presentation_url: presentation_url,
-          folder_url_or_id: el("folder_url").value.trim(),
-          new_name: "Presentación generada",
+          folder_url_or_id: el("folder_url").value.trim() || serverConfig.default_folder_url || "",
+          new_name: serverConfig.default_new_name || "Presentación generada",
           slides_used: data.slides_used || [],
         };
         const jsonEl = el("out-json-preview");
@@ -329,13 +340,13 @@
 
     el("btn-generate").setAttribute("data-original-text", "Generar copia");
     el("btn-generate").addEventListener("click", async () => {
-      const presentation_url = el("presentation_url").value.trim();
-      const folder_url_or_id = el("folder_url").value.trim();
+      const presentation_url = el("presentation_url").value.trim() || serverConfig.default_presentation_url || "";
+      const folder_url_or_id = el("folder_url").value.trim() || serverConfig.default_folder_url || "";
       if (!presentation_url || !presentation_url.includes("docs.google.com/presentation")) {
-        showError("out-generate", "Indicá la URL de la presentación plantilla."); return;
+        showError("out-generate", "Plantilla: app_config o URL de Slides."); return;
       }
       if (!folder_url_or_id) {
-        showError("out-generate", "Indicá la carpeta de Drive donde guardar la copia."); return;
+        showError("out-generate", "Carpeta: app_config o URL de Drive."); return;
       }
       if (!lastSegmentPayload || !(lastSegmentPayload.slides_used && lastSegmentPayload.slides_used.length)) {
         showError("out-generate", "Ejecutá primero «Dividir y asignar» para tener slides que generar."); return;
@@ -343,9 +354,9 @@
       setLoading("btn-generate", true);
       try {
         const data = await post("/api/generate-copy-from-segment", {
-          presentation_url,
-          folder_url_or_id,
-          new_name: "Presentación generada",
+          presentation_url: el("presentation_url").value.trim(),
+          folder_url_or_id: el("folder_url").value.trim(),
+          new_name: serverConfig.default_new_name || undefined,
           slides_used: lastSegmentPayload.slides_used,
         });
         const url = data.new_presentation_url || "";

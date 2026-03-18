@@ -41,7 +41,12 @@ El usuario envía un texto; Gemini lo interpreta, lo estructura y lo divide en p
 ## Estructura del proyecto
 
 - `app.py` — API FastAPI (endpoints del flujo).
-- `gemini_parser.py` — Llamadas a Gemini (interpretar, estructurar, segmentar, rellenar por slide).
+- `llm/` — Módulos Gemini: `config` (RPM/batch), `rate_limit`, `client`, `prompts`, `interpret`, `segmentation`, `slide_fill`.
+- `gemini_parser.py` — Reexporta `llm` (compatibilidad).
+
+### Free tier (RPM en AI Studio)
+
+Por defecto: **`gemini-2.0-flash`**. Si ves 404, cambiá `GEMINI_MODEL` (p. ej. `gemini-1.5-flash`). La app espacia llamadas según el modelo (~12/min para Flash, ~1.5/min para Pro, ~55/min para Gemma). Más slides por batch → menos llamadas: `GEMINI_BATCH_CHUNK=9` (ver `.env.example`).
 - `context_service.py` — Carga de `context.json` y resolución de plantillas ($) y placeholders (#).
 - `slides_automation.py` — Google Slides/Drive: leer presentación, copiar, reordenar, reemplazar marcadores.
 - `context.json` — Definición de plantillas ($) y marcadores (#) para cada tipo de slide.

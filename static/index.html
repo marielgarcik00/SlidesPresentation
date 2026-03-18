@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slides desde texto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #18181c;
+      --border: #2a2a30;
+      --text: #e4e4e7;
+      --muted: #71717a;
+      --accent: #a78bfa;
+      --accent-dim: #7c3aed;
+      --success: #34d399;
+      --error: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    input[type="text"],
+    input[type="url"],
+    textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: var(--accent-dim); }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn.secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn.secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .section h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0 0 1rem 0;
+      color: var(--text);
+    }
+    .step-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .out {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--bg);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .out.json {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.85rem;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .out a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .out a:hover { text-decoration: underline; }
+    .error { color: var(--error); }
+    .success { color: var(--success); }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+    .card-list { margin: 0; padding: 0; list-style: none; }
+    .card-list li {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .card-list li:last-child { margin-bottom: 0; }
+    .card-list strong { color: var(--accent); }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Slides desde texto</h1>
+    <p class="subtitle">Pegá tu texto, indicá la plantilla de Google Slides y la carpeta de Drive. La IA interpreta, divide y genera la presentación.</p>
+
+    <div class="section">
+      <h2>Texto</h2>
+      <label for="text">Contenido para las slides</label>
+      <textarea id="text" placeholder="Ej: Bebidas energéticas. Monster: es una bebida que se toma en lata. Red bull: otra bebida en lata. Herramientas. 1. GTM: Google Tag Manager. 2. GA4: Analytics. 3. Power BI: reportes."></textarea>
+    </div>
+
+    <div class="section">
+      <h2>URLs</h2>
+      <label for="presentation_url">URL de la presentación plantilla (Google Slides)</label>
+      <input type="url" id="presentation_url" placeholder="https://docs.google.com/presentation/d/.../edit" />
+      <label for="folder_url">URL de la carpeta de Drive donde guardar la copia</label>
+      <input type="url" id="folder_url" placeholder="https://drive.google.com/drive/folders/..." />
+    </div>
+
+    <div class="section">
+      <h2>1. Interpretación (Gemini)</h2>
+      <p class="muted">Qué entiende la IA de tu texto en bruto.</p>
+      <div class="step-actions">
+        <button type="button" class="btn" id="btn-interpret" data-loading="0">Interpretar</button>
+      </div>
+      <div id="out-interpret" class="out" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+      <h2>2. Estructura (título y subtítulos)</h2>
+      <p class="muted">Tipo de contenido, título principal y ítems con título/descripción.</p>
+      <div class="step-actions">
+        <button type="button" class="btn" id="btn-structure" data-loading="0">Estructurar</button>
+      </div>
+      <div id="out-structure" class="out json" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+      <h2>3. Dividir y asignar a slides</h2>
+      <p class="muted">El texto se divide en partes y cada parte se asigna a una plantilla de slide. Necesita URL de la presentación.</p>
+      <div class="step-actions">
+        <button type="button" class="btn" id="btn-segment" data-loading="0">Dividir y asignar</button>
+      </div>
+      <div id="out-segment" class="out" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+      <h2>3.5. JSON que se enviará al generar la presentación</h2>
+      <p class="muted">Vista previa del payload que se manda al servidor antes de crear la copia en Drive.</p>
+      <div id="out-json-preview" class="out json"><span class="muted">Ejecutá «Dividir y asignar» para ver el JSON.</span></div>
+    </div>
+
+    <div class="section">
+      <h2>4. Generar copia en Drive</h2>
+      <p class="muted">Crea una copia en la carpeta indicada, con las slides elegidas y rellenadas. Necesita URL de la carpeta y haber ejecutado el paso 3.</p>
+      <div class="step-actions">
+        <button type="button" class="btn" id="btn-generate" data-loading="0">Generar copia</button>
+      </div>
+      <div id="out-generate" class="out" style="display:none;"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = "";
+
+    function el(id) { return document.getElementById(id); }
+    function setLoading(btn, loading) {
+      const b = typeof btn === "string" ? el(btn) : btn;
+      if (!b) return;
+      b.dataset.loading = loading ? "1" : "0";
+      b.disabled = !!loading;
+      b.innerHTML = loading ? '<span class="spinner"></span> Procesando...' : b.getAttribute("data-original-text") || b.textContent;
+    }
+    function showOut(id, html, isJson) {
+      const out = el(id);
+      if (!out) return;
+      out.style.display = "block";
+      out.innerHTML = html;
+      out.classList.toggle("json", !!isJson);
+    }
+    function showError(id, msg) {
+      showOut(id, '<span class="error">' + (msg || "Error") + "</span>", false);
+    }
+    async function post(url, body) {
+      const r = await fetch(API + url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.detail || r.statusText || "Error " + r.status);
+      return data;
+    }
+
+    el("btn-interpret").setAttribute("data-original-text", "Interpretar");
+    el("btn-interpret").addEventListener("click", async () => {
+      const text = el("text").value.trim();
+      if (!text) { showError("out-interpret", "Escribí o pegá texto primero."); return; }
+      setLoading("btn-interpret", true);
+      try {
+        const data = await post("/api/ask-gemini", { text });
+        showOut("out-interpret", (data.response || "").replace(/</g, "&lt;"), false);
+      } catch (e) {
+        showError("out-interpret", e.message);
+      } finally {
+        setLoading("btn-interpret", false);
+      }
+    });
+
+    el("btn-structure").setAttribute("data-original-text", "Estructurar");
+    el("btn-structure").addEventListener("click", async () => {
+      const text = el("text").value.trim();
+      if (!text) { showError("out-structure", "Escribí o pegá texto primero."); return; }
+      setLoading("btn-structure", true);
+      try {
+        const data = await post("/api/ask-gemini-structure", { text });
+        showOut("out-structure", JSON.stringify(data.structured || {}, null, 2), true);
+      } catch (e) {
+        showError("out-structure", e.message);
+      } finally {
+        setLoading("btn-structure", false);
+      }
+    });
+
+    let lastSegmentPayload = null;
+    el("btn-segment").setAttribute("data-original-text", "Dividir y asignar");
+    el("btn-segment").addEventListener("click", async () => {
+      const text = el("text").value.trim();
+      const presentation_url = el("presentation_url").value.trim();
+      if (!text) { showError("out-segment", "Escribí o pegá texto primero."); return; }
+      if (!presentation_url || !presentation_url.includes("docs.google.com/presentation")) {
+        showError("out-segment", "Indicá la URL de la presentación plantilla (Google Slides)."); return;
+      }
+      setLoading("btn-segment", true);
+      try {
+        const data = await post("/api/segment-and-assign-slides", { text, presentation_url });
+        lastSegmentPayload = data;
+        const segments = (data.segments || []).map(s =>
+          "<li><strong>" + (s.template || "?") + "</strong> (slide " + (s.slide_index ?? "—") + ") — " + (s.text_preview || "").replace(/</g, "&lt;") + "</li>"
+        ).join("");
+        const slidesUsed = (data.slides_used || []).length;
+        showOut(
+          "out-segment",
+          "<p class=\"success\">" + segments.length + " partes, " + slidesUsed + " slides asignadas.</p><ul class=\"card-list\">" + segments + "</ul>",
+          false
+        );
+        // Mostrar el JSON que se enviará en el paso 4
+        const jsonPreview = {
+          presentation_url: presentation_url,
+          folder_url_or_id: el("folder_url").value.trim(),
+          new_name: "Presentación generada",
+          slides_used: data.slides_used || [],
+        };
+        const jsonEl = el("out-json-preview");
+        jsonEl.innerHTML = "";
+        jsonEl.appendChild(document.createTextNode(JSON.stringify(jsonPreview, null, 2)));
+        jsonEl.classList.add("json");
+      } catch (e) {
+        showError("out-segment", e.message);
+      } finally {
+        setLoading("btn-segment", false);
+      }
+    });
+
+    el("btn-generate").setAttribute("data-original-text", "Generar copia");
+    el("btn-generate").addEventListener("click", async () => {
+      const presentation_url = el("presentation_url").value.trim();
+      const folder_url_or_id = el("folder_url").value.trim();
+      if (!presentation_url || !presentation_url.includes("docs.google.com/presentation")) {
+        showError("out-generate", "Indicá la URL de la presentación plantilla."); return;
+      }
+      if (!folder_url_or_id) {
+        showError("out-generate", "Indicá la carpeta de Drive donde guardar la copia."); return;
+      }
+      if (!lastSegmentPayload || !(lastSegmentPayload.slides_used && lastSegmentPayload.slides_used.length)) {
+        showError("out-generate", "Ejecutá primero «Dividir y asignar» para tener slides que generar."); return;
+      }
+      setLoading("btn-generate", true);
+      try {
+        const data = await post("/api/generate-copy-from-segment", {
+          presentation_url,
+          folder_url_or_id,
+          new_name: "Presentación generada",
+          slides_used: lastSegmentPayload.slides_used,
+        });
+        const url = data.new_presentation_url || "";
+        showOut(
+          "out-generate",
+          "<p class=\"success\">Copia creada.</p><p><a href=\"" + url + "\" target=\"_blank\" rel=\"noopener\">Abrir presentación en Google Slides</a></p>",
+          false
+        );
+      } catch (e) {
+        showError("out-generate", e.message);
+      } finally {
+        setLoading("btn-generate", false);
+      }
+    });
+  </script>
+</body>
+</html>

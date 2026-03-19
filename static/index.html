@@ -269,13 +269,16 @@
     }
 
     el("btn-interpret").setAttribute("data-original-text", "Interpretar");
+    let lastInterpretation = null;
+
     el("btn-interpret").addEventListener("click", async () => {
       const text = el("text").value.trim();
       if (!text) { showError("out-interpret", "Escribí o pegá texto primero."); return; }
       setLoading("btn-interpret", true);
       try {
         const data = await post("/api/ask-gemini", { text });
-        showOut("out-interpret", (data.response || "").replace(/</g, "&lt;"), false);
+        lastInterpretation = data.response || "";
+        showOut("out-interpret", lastInterpretation.replace(/</g, "&lt;"), false);
       } catch (e) {
         showError("out-interpret", e.message);
       } finally {
@@ -285,11 +288,10 @@
 
     el("btn-structure").setAttribute("data-original-text", "Estructurar");
     el("btn-structure").addEventListener("click", async () => {
-      const text = el("text").value.trim();
-      if (!text) { showError("out-structure", "Escribí o pegá texto primero."); return; }
+      if (!lastInterpretation) { showError("out-structure", "Primero ejecutá «Interpretar» (paso 1)."); return; }
       setLoading("btn-structure", true);
       try {
-        const data = await post("/api/ask-gemini-structure", { text });
+        const data = await post("/api/ask-gemini-structure", { text: lastInterpretation });
         showOut("out-structure", JSON.stringify(data.structured || {}, null, 2), true);
       } catch (e) {
         showError("out-structure", e.message);

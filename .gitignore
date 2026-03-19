@@ -2,8 +2,23 @@
 .env
 .env.local
 .env.*.local
+.env.*
+
+# Credenciales y claves de Google / OAuth
 credentials.json
-client_secret.json
+client_secret*.json
+service_account*.json
+*_service_account*.json
+token.json
+token.pickle
+gcp_credentials*.json
+google_credentials*.json
+
+# Claves privadas genéricas
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Python
 venv/

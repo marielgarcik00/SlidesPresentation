@@ -1,5 +1,5 @@
 """
-Capa LLM modular: cliente Gemini, límites RPM (free tier), interpretación, segmentación y relleno de slides.
+Capa LLM modular: cliente Vertex AI (Gemini), límites RPM, interpretación, segmentación y relleno de slides.
 """
 from llm.interpret import ask_gemini, ask_gemini_title_and_subtitles
 from llm.segmentation import segment_text_into_parts

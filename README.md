@@ -7,7 +7,7 @@ El usuario envía un texto; Gemini lo interpreta, lo estructura y lo divide en p
 - Python 3.10+
 - Cuenta de Google con la plantilla en Google Slides y una carpeta en Drive.
 - **Credenciales**:
-  - **Gemini**: API key en [Google AI Studio](https://aistudio.google.com/apikey). Variable de entorno `GEMINI_API_KEY`.
+  - **Gemini (Vertex AI en GCP)**: API de [Vertex AI Generative](https://cloud.google.com/vertex-ai/generative-ai/docs/start/quickstarts/quickstart-multimodal) habilitada en el proyecto; en `.env`: `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION` (p. ej. `us-central1`). Autenticación con [ADC](https://cloud.google.com/docs/authentication/application-default-credentials) (`gcloud auth application-default login` o `GOOGLE_APPLICATION_CREDENTIALS`) y cuenta de servicio con rol **Vertex AI User**. Opcional: `GEMINI_VERTEX_CREDENTIALS_PATH` si el JSON de Slides/Drive es distinto.
   - **Google Slides/Drive**: archivo `credentials.json` de una cuenta de servicio con acceso a la presentación y a la carpeta de Drive. Variable opcional `GOOGLE_CREDENTIALS_PATH` (por defecto `./credentials.json`).
 
 ## Cómo usar
@@ -16,7 +16,7 @@ El usuario envía un texto; Gemini lo interpreta, lo estructura y lo divide en p
    Poner el `credentials.json` de tu cuenta de servicio en la raíz del proyecto (o indicar la ruta en `GOOGLE_CREDENTIALS_PATH`).
 
 2. **Variables de entorno**  
-   Crear un `.env` a partir de `.env.example` y definir al menos `GEMINI_API_KEY`.
+   Crear un `.env` a partir de `.env.example` y definir proyecto y región de Vertex (`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`) más autenticación GCP (ver `.env.example`).
 
 3. **Instalar dependencias**
    ```bash
@@ -44,9 +44,9 @@ El usuario envía un texto; Gemini lo interpreta, lo estructura y lo divide en p
 - `llm/` — Módulos Gemini: `config` (RPM/batch), `rate_limit`, `client`, `prompts`, `interpret`, `segmentation`, `slide_fill`.
 - `gemini_parser.py` — Reexporta `llm` (compatibilidad).
 
-### Free tier (RPM en AI Studio)
+### Cuotas y ritmo (Vertex AI)
 
-Por defecto: **`gemini-2.0-flash`**. Si ves 404, cambiá `GEMINI_MODEL` (p. ej. `gemini-1.5-flash`). La app espacia llamadas según el modelo (~12/min para Flash, ~1.5/min para Pro, ~55/min para Gemma). Más slides por batch → menos llamadas: `GEMINI_BATCH_CHUNK=9` (ver `.env.example`).
+Por defecto: **`gemini-2.0-flash`**. Si ves 404, cambiá `GEMINI_MODEL` según los modelos disponibles en tu región de Vertex. La app espacia llamadas según el modelo (~12/min para Flash, ~1.5/min para Pro, ~55/min para Gemma) para no saturar; ajustá `GEMINI_RPM_LIMIT` si tu cuota de proyecto es distinta. Más slides por batch → menos llamadas: `GEMINI_BATCH_CHUNK=9` (ver `.env.example`).
 - `context_service.py` — Carga de `context.json` y resolución de plantillas ($) y placeholders (#).
 - `slides_automation.py` — Google Slides/Drive: leer presentación, copiar, reordenar, reemplazar marcadores.
 - `context.json` — Definición de plantillas ($) y marcadores (#) para cada tipo de slide.

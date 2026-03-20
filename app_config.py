@@ -1,5 +1,5 @@
 """
-Editá los valores _DEFAULT_* (o usá .env) — un solo lugar para plantilla, carpeta, Gemini.
+Editá los valores _DEFAULT_* (o usá .env) — un solo lugar para plantilla, carpeta y modelo Vertex.
 """
 import os
 
@@ -8,8 +8,8 @@ _DEFAULT_PRESENTATION_URL = "https://docs.google.com/presentation/d/1Q1PtD0eAKaN
 _DEFAULT_DRIVE_FOLDER_URL = "https://drive.google.com/drive/folders/1KLSmUUSGL0QyGC_hGywib-IXeog2Dj4m"
 _DEFAULT_NEW_NAME = "Presentación generada desde texto"
 
-# --- Gemini: modelo y ritmo (RPM más alto = menos espera entre llamadas; Flash free ~15/min) ---
-_DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
+# --- Vertex (Gemini): modelo y ritmo (RPM más alto = menos espera entre llamadas) ---
+_DEFAULT_GEMINI_MODEL = "gemini-2.5-pro"
 _DEFAULT_GEMINI_RPM = "15"
 
 DEFAULT_PRESENTATION_URL = os.getenv("DEFAULT_PRESENTATION_URL", _DEFAULT_PRESENTATION_URL)

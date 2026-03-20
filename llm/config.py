@@ -1,18 +1,26 @@
 """
-Configuración central: modelo, RPM según tier de AI Studio, tamaño de batch.
-Los límites típicos (free tier) se infieren del nombre del modelo.
+Configuración central: modelo Vertex AI, RPM (throttle entre llamadas), tamaño de batch.
+Los límites por defecto se infieren del nombre del modelo si GEMINI_RPM_LIMIT=auto.
+
+Autenticación: Application Default Credentials o GEMINI_VERTEX_CREDENTIALS_PATH.
+Proyecto y región: GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION (el SDK puede inferir
+el proyecto desde ADC si no está en el entorno).
 """
 from __future__ import annotations
 
 import os
 from typing import Optional
 
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def api_key() -> str:
-    k = (os.getenv("GEMINI_API_KEY") or "").strip()
-    if not k:
-        raise RuntimeError("Falta GEMINI_API_KEY en .env")
-    return k
+
+def vertex_credentials_path_resolved() -> Optional[str]:
+    """Ruta absoluta a JSON de cuenta de servicio solo para Vertex (opcional)."""
+    raw = (os.getenv("GEMINI_VERTEX_CREDENTIALS_PATH") or "").strip()
+    if not raw:
+        return None
+    path = raw if os.path.isabs(raw) else os.path.normpath(os.path.join(_PROJECT_ROOT, raw))
+    return path
 
 
 def model(default: Optional[str] = None) -> str:
@@ -77,7 +85,7 @@ def effective_rpm_for_model(model_name: str) -> float:
         return 1.5
     if "lite" in m:
         return 12.0
-    return 12.0  # 1.5 Flash, Flash-8B, etc. (típico 15/min)
+    return 12.0
 
 
 def seconds_between_calls(model_name: str) -> float:

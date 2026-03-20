@@ -307,7 +307,7 @@ class GenerateCopyFromSegmentRequest(BaseModel):
 # App
 app = FastAPI(
     title="Slides desde texto",
-    description="API: texto → Gemini interpreta y segmenta → copia en Drive con slides rellenadas",
+    description="API: texto → Vertex AI (Gemini) interpreta y segmenta → copia en Drive con slides rellenadas",
     version="1.0.0",
 )
 
@@ -376,8 +376,8 @@ async def ask_gemini_endpoint(request: AskGeminiRequest):
             raise HTTPException(
                 status_code=429,
                 detail=(
-                    "Límite de la API de Gemini alcanzado (la app ya reintentó 3 veces). "
-                    "Probá en unos 5–10 minutos, mañana, o creá otra API key en https://aistudio.google.com/apikey y ponela en el .env."
+                    "Cuota o límite de Vertex AI alcanzado (la app ya reintentó varias veces). "
+                    "Revisá cuotas del proyecto en Google Cloud, esperá unos minutos o reducí el ritmo (GEMINI_RPM_LIMIT / batch)."
                 ),
             )
         handle_api_error("ask-gemini", e)
@@ -395,7 +395,7 @@ async def ask_gemini_structure_endpoint(request: AskGeminiRequest):
         if _is_quota_error(e):
             raise HTTPException(
                 status_code=429,
-                detail="Límite de Gemini. «Dividir y asignar» usa pocas llamadas (batch); esperá 5–10 min o otra API key en https://aistudio.google.com/apikey",
+                detail="Cuota de Vertex AI. «Dividir y asignar» usa pocas llamadas (batch); esperá unos minutos o revisá cuotas en Google Cloud.",
             )
         handle_api_error("ask-gemini-structure", e)
 
@@ -460,7 +460,7 @@ async def segment_and_assign_slides_endpoint(request: SegmentAndAssignRequest):
         if _is_quota_error(e):
             raise HTTPException(
                 status_code=429,
-                detail="Límite de Gemini. «Dividir y asignar» usa pocas llamadas (batch); esperá 5–10 min o otra API key en https://aistudio.google.com/apikey",
+                detail="Cuota de Vertex AI. «Dividir y asignar» usa pocas llamadas (batch); esperá unos minutos o revisá cuotas en Google Cloud.",
             )
         logger.exception("Error en segment-and-assign-slides")
         handle_api_error("segment-and-assign-slides", e)

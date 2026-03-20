@@ -4,13 +4,14 @@ Cliente Gemini (google-genai) compartido: generación con reintentos y rate limi
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Any, Optional
 
 from google import genai
 from google.genai import types
 
-from llm.config import api_key
+from llm.config import vertex_credentials_path_resolved
 from llm.rate_limit import wait_for_slot
 
 logger = logging.getLogger(__name__)
@@ -18,10 +19,33 @@ logger = logging.getLogger(__name__)
 _client: Optional[genai.Client] = None
 
 
+def _load_vertex_service_account_credentials():
+    path = vertex_credentials_path_resolved()
+    if not path:
+        return None
+    if not os.path.exists(path):
+        raise RuntimeError(f"GEMINI_VERTEX_CREDENTIALS_PATH no existe: {path}")
+    from google.oauth2 import service_account
+
+    scopes = ("https://www.googleapis.com/auth/cloud-platform",)
+    return service_account.Credentials.from_service_account_file(path, scopes=scopes)
+
+
 def get_client() -> genai.Client:
     global _client
     if _client is None:
-        _client = genai.Client(api_key=api_key())
+        kwargs: dict = {"vertexai": True}
+        creds = _load_vertex_service_account_credentials()
+        if creds is not None:
+            kwargs["credentials"] = creds
+        project = (os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("GCP_PROJECT") or "").strip()
+        location = (os.getenv("GOOGLE_CLOUD_LOCATION") or os.getenv("VERTEX_LOCATION") or "").strip()
+        if project:
+            kwargs["project"] = project
+        if location:
+            kwargs["location"] = location
+        _client = genai.Client(**kwargs)
+        logger.info("Cliente LLM: Vertex AI (proyecto=%s, ubicación=%s)", project or "(ADC/env)", location or "default SDK")
     return _client
 
 

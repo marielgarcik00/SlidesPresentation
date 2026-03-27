@@ -16,8 +16,8 @@ _lock = threading.Lock()
 _next_allowed_monotonic: float = 0.0
 
 
+# Espera el tiempo mínimo necesario para respetar el RPM del modelo antes de hacer una llamada a la API.
 def wait_for_slot(model_name: str) -> None:
-    """Espera el mínimo necesario antes de iniciar otra llamada a la API."""
     global _next_allowed_monotonic
     interval = seconds_between_calls(model_name)
     with _lock:

@@ -8,6 +8,7 @@ from llm.json_utils import parse_object
 from llm.prompts import batch_blocks, slide_placeholders
 
 
+# Rellena los placeholders (#) de una sola slide enviando el texto a Gemini. Devuelve un dict {placeholder: valor}.
 def ask_gemini_for_slide(
     text: str,
     placeholders: List[str],
@@ -27,7 +28,7 @@ def ask_gemini_for_slide(
         prompt,
         temperature=0.0,
         max_output_tokens=max_output_tokens("slide"),
-        json_mode=True,
+        json_mode=False,
     )
     parsed = parse_object(raw)
     pl = {str(k).lower(): v for k, v in parsed.items()}
@@ -39,6 +40,7 @@ def ask_gemini_for_slide(
     return out
 
 
+# Rellena múltiples slides en batch (agrupa en chunks) para minimizar llamadas a Gemini.
 def ask_gemini_batch_for_slides(
     slide_jobs: List[Dict[str, Any]],
     model: Optional[str] = None,
@@ -54,6 +56,7 @@ def ask_gemini_batch_for_slides(
     return all_out
 
 
+# Procesa un chunk de slides en una sola llamada a Gemini y mapea cada respuesta al job correspondiente.
 def _batch_chunk(chunk: List[Dict[str, Any]], m: str) -> List[Dict[str, str]]:
     prompt = batch_blocks(chunk)
     raw = generate(
@@ -61,7 +64,7 @@ def _batch_chunk(chunk: List[Dict[str, Any]], m: str) -> List[Dict[str, str]]:
         prompt,
         temperature=0.0,
         max_output_tokens=max_output_tokens("batch"),
-        json_mode=True,
+        json_mode=False,
     )
     parsed = parse_object(raw)
     results: List[Dict[str, str]] = []
@@ -74,6 +77,10 @@ def _batch_chunk(chunk: List[Dict[str, Any]], m: str) -> List[Dict[str, str]]:
         obj = parsed.get(str(i))
         if obj is None:
             obj = parsed.get(i)
+        if obj is None:
+            obj = parsed.get(f"[{i}]")
+        if obj is None:
+            obj = parsed.get(f"BLOQUE {i}")
         if not isinstance(obj, dict):
             obj = {}
         pl = {str(k).lower(): v for k, v in obj.items()}

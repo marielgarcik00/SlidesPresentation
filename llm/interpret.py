@@ -9,6 +9,7 @@ from llm.json_utils import parse_object
 from llm.prompts import interpret_default, structure_json
 
 
+# Normaliza la respuesta JSON de Gemini al formato estándar de estructura (content_type, main_title, subtitles).
 def _normalize_structure(parsed: Dict[str, Any]) -> Dict[str, Any]:
     out: Dict[str, Any] = {
         "content_type": "",
@@ -42,6 +43,7 @@ def _normalize_structure(parsed: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
+# Envía el texto a Gemini con una instrucción libre y devuelve la interpretación en texto plano.
 def ask_gemini(
     text: str,
     instruction: str = "Qué entiendes de este texto?",
@@ -60,6 +62,7 @@ def ask_gemini(
     )
 
 
+# Pide a Gemini que clasifique el texto: content_type, título principal y lista de subtítulos.
 def ask_gemini_title_and_subtitles(text: str, model: Optional[str] = None) -> Dict[str, Any]:
     if not (text or "").strip():
         return {"content_type": "", "content_type_note": "", "main_title": "", "has_subtitles": False, "subtitles": []}
@@ -70,6 +73,6 @@ def ask_gemini_title_and_subtitles(text: str, model: Optional[str] = None) -> Di
         structure_json(body),
         temperature=0.0,
         max_output_tokens=max_output_tokens("structure"),
-        json_mode=True,
+        json_mode=False,
     )
     return _normalize_structure(parse_object(raw))

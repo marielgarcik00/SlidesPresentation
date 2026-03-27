@@ -20,7 +20,7 @@ import app_config
 
 from slides_automation import GoogleSlidesAutomation
 from llm.config import batch_chunk_size
-from gemini_parser import (
+from llm import (
     ask_gemini,
     ask_gemini_title_and_subtitles,
     ask_gemini_batch_for_slides,
@@ -56,10 +56,6 @@ def validate_credentials() -> str:
         )
     return creds_path
 
-#Crea una instancia de GoogleSlidesAutomation con la ruta de credenciales dada
-def create_automation(credentials_path: str) -> GoogleSlidesAutomation:
-    return GoogleSlidesAutomation(credentials_path)
-
 # Registra el error y re-lanza HTTPException
 def handle_api_error(context: str, error: Exception) -> None:
     logger.error("✗ Error %s: %s", context, str(error))
@@ -86,12 +82,12 @@ def run_segment_and_assign(
     slides: List[Dict],
     all_indices: set,
     delay_between_calls: int,
+    use_batch: bool = True,
 ) -> SegmentAssignResult:
     """
     Asigna plantillas sin N llamadas a Gemini: una sola llamada en batch para rellenar
     todas las slides (además de la segmentación, que ya ocurrió antes).
     """
-    use_batch = os.getenv("GEMINI_BATCH_SLIDES", "true").lower() in ("1", "true", "yes")
     used_indices = set()
     segments_with_slides = []
     slides_used = []
@@ -104,14 +100,15 @@ def run_segment_and_assign(
             num = 0
         content_type_raw = seg.get("content_type") or "descripcion"
         content_type_str = content_type_raw if isinstance(content_type_raw, str) else str(content_type_raw)
+        text_raw = seg.get("text") or ""
+        text_str = text_raw if isinstance(text_raw, str) else str(text_raw)
         structured = {
             "content_type": content_type_str.strip().lower(),
             "subtitles": [{}] * max(0, num),
+            "text": text_str,
         }
         preferred = get_preferred_templates_for_content(structured)
         best_index, matched_template = find_best_slide_index(slides, preferred, exclude_indices=None)
-        text_raw = seg.get("text") or ""
-        text_str = text_raw if isinstance(text_raw, str) else str(text_raw)
         text_preview = text_str[:200]
         if len(text_str) > 200:
             text_preview += "..."
@@ -240,6 +237,10 @@ def resolve_slide_sequence(slides: List[Dict], slides_used: List[Dict]) -> List[
         raise ValueError(
             "No se pudo resolver ninguna plantilla. Revisá que cada ítem tenga 'template'."
         )
+    # Agregar la slide Thank You al final si existe en la plantilla
+    thank_you_index, _ = find_best_slide_index(slides, ["$thank_you"], exclude_indices=None)
+    if thank_you_index is not None:
+        sequence.append(thank_you_index)
     return sequence
 
 # Crea una copia de la presentación en la carpeta indicada, con las slides en el orden de slides_used, y rellena cada slide con su json_for_slide. Elimina los $.
@@ -257,7 +258,6 @@ def run_generate_copy_from_segment(
     slide_sequence = resolve_slide_sequence(slides, slides_used)
     new_id = automation.copy_presentation_advanced(
         presentation_url=presentation_url,
-        slide_counts={},
         folder_url_or_id=folder_url_or_id,
         new_name=new_name,
         slide_sequence=slide_sequence,
@@ -269,13 +269,21 @@ def run_generate_copy_from_segment(
         content = u.get("json_for_slide")
         if not isinstance(content, dict):
             content = {}
-        if content:
-            automation.replace_components_in_slide_by_index(
-                presentation_url=new_url,
-                slide_index=i,
-                replacements=content,
-                remove_identifiers=True,
-            )
+        automation.replace_components_in_slide_by_index(
+            presentation_url=new_url,
+            slide_index=i,
+            replacements=content,
+            remove_identifiers=True,
+        )
+    # Limpiar el identificador $thank_you de la última slide (no tiene marcadores #)
+    thank_you_slide_index = len(slides_used)
+    if len(slide_sequence) > len(slides_used):
+        automation.replace_components_in_slide_by_index(
+            presentation_url=new_url,
+            slide_index=thank_you_slide_index,
+            replacements={},
+            remove_identifiers=True,
+        )
     return GenerateCopyResult(
         new_presentation_id=new_id,
         new_presentation_url=new_url,
@@ -290,7 +298,7 @@ def run_generate_copy_from_segment(
 class AskGeminiRequest(BaseModel):
     text: str
 
-#  Solicitud: texto + URL de presentación para segmentar y asignar cada parte a una slide
+# Solicitud: texto + URL de presentación (para Step 2 y Step 3)
 class SegmentAndAssignRequest(BaseModel):
     text: str
     presentation_url: str = ""
@@ -415,7 +423,7 @@ async def segment_and_assign_slides_endpoint(request: SegmentAndAssignRequest):
     try:
         context_summary = get_context_summary_for_segmenter()
         creds_path = validate_credentials()
-        automation = create_automation(creds_path)
+        automation = GoogleSlidesAutomation(creds_path)
         slides = automation.get_presentation_slides(url)
         if not slides:
             raise HTTPException(
@@ -430,12 +438,10 @@ async def segment_and_assign_slides_endpoint(request: SegmentAndAssignRequest):
                 detail="La IA no pudo dividir el texto en partes. Probá con otro texto.",
             )
         delay_between_calls = int(os.getenv("GEMINI_DELAY_BETWEEN_CALLS", "20"))
-        batch_on = os.getenv("GEMINI_BATCH_SLIDES", "true").lower() in ("1", "true", "yes")
-        if batch_on:
+        use_batch = os.getenv("GEMINI_BATCH_SLIDES", "true").lower() in ("1", "true", "yes")
+        if use_batch:
             ch = batch_chunk_size()
-            # peor caso: un job por segmento (sin conocer pending exacto antes)
-            n_fill = max(1, len(segments))
-            n_batch = (n_fill + ch - 1) // ch
+            n_batch = (max(1, len(segments)) + ch - 1) // ch
             logger.info(
                 "Dividir y asignar: %s segmentos → ~%s llamadas Gemini (1 segmentar + ≤%s batch, chunk=%s)",
                 len(segments), 1 + n_batch, n_batch, ch,
@@ -446,7 +452,7 @@ async def segment_and_assign_slides_endpoint(request: SegmentAndAssignRequest):
                 len(segments), 1 + len(segments), delay_between_calls,
             )
         result = run_segment_and_assign(
-            segments, slides, all_indices, delay_between_calls,
+            segments, slides, all_indices, delay_between_calls, use_batch=use_batch,
         )
         return {
             "success": True,
@@ -487,7 +493,7 @@ async def generate_copy_from_segment_endpoint(request: GenerateCopyFromSegmentRe
         )
     try:
         creds_path = validate_credentials()
-        automation = create_automation(creds_path)
+        automation = GoogleSlidesAutomation(creds_path)
         result = run_generate_copy_from_segment(
             automation=automation,
             presentation_url=url,

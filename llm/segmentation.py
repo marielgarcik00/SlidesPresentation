@@ -9,6 +9,7 @@ from llm.json_utils import parse_object
 from llm.prompts import segment_json
 
 
+# Divide el texto en segmentos (uno por slide) usando Gemini, asignando content_type y num_items a cada uno.
 def segment_text_into_parts(
     text: str,
     model: Optional[str] = None,
@@ -23,7 +24,7 @@ def segment_text_into_parts(
         segment_json(body, context_summary or ""),
         temperature=0.0,
         max_output_tokens=max_output_tokens("segment"),
-        json_mode=True,
+        json_mode=False,
     )
     d = parse_object(raw)
     arr = d.get("parts") if isinstance(d.get("parts"), list) else []

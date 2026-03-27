@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 _client: Optional[genai.Client] = None
 
 
+# Carga las credenciales de cuenta de servicio para Vertex AI desde el archivo indicado en el .env.
 def _load_vertex_service_account_credentials():
     path = vertex_credentials_path_resolved()
     if not path:
@@ -31,6 +32,7 @@ def _load_vertex_service_account_credentials():
     return service_account.Credentials.from_service_account_file(path, scopes=scopes)
 
 
+# Devuelve el cliente Gemini singleton (lo crea la primera vez con project/location del .env).
 def get_client() -> genai.Client:
     global _client
     if _client is None:
@@ -49,21 +51,13 @@ def get_client() -> genai.Client:
     return _client
 
 
-def close_client() -> None:
-    global _client
-    if _client is not None:
-        try:
-            _client.close()
-        except Exception:
-            pass
-        _client = None
-
-
+# Detecta si una excepción es de cuota/rate limit (429, RESOURCE_EXHAUSTED).
 def _is_quota(e: Exception) -> bool:
     s = (str(e) or "").lower()
-    return "429" in str(e) or "resource exhausted" in s or "quota" in s
+    return "429" in s or "resource exhausted" in s or "quota" in s
 
 
+# Llama a Gemini con throttle RPM y reintentos automáticos ante errores de cuota (429). Devuelve el texto generado.
 def generate(
     model: str,
     contents: str,
@@ -73,9 +67,6 @@ def generate(
     json_mode: bool = False,
     max_retries: int = 4,
 ) -> str:
-    """
-    Una llamada a generate_content con throttle y reintentos ante 429.
-    """
     kw: dict[str, Any] = {
         "temperature": temperature,
         "max_output_tokens": max_output_tokens,

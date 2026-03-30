@@ -93,51 +93,26 @@ def resolve_context_template(tags: List[str]) -> Dict:
 # Preferencia de templates por tipo de contenido
 # ---------------------------------------------------------------------------
 
-"""Funcion a revisar (hay que hacerla escalable ) """
-# A partir del segmento estructurado (content_type, subtitles, text), devuelve los template IDs preferidos en orden de prioridad
+# Lee content_type_routing de context.json y devuelve los template IDs preferidos en orden de prioridad.
 def get_preferred_templates_for_content(structured: Dict) -> List[str]:
     content_type = (structured.get("content_type") or "").strip().lower()
     subtitles = structured.get("subtitles") or []
     num = len(subtitles) if isinstance(subtitles, list) else 0
-    text = (structured.get("text") or "").strip()
-    text_len = len(text)
-
-    # Heurística: texto muy corto y sin subtítulos → tratar como título de sección
+    text_len = len((structured.get("text") or "").strip())
     is_title_only = text_len < 120 and num == 0
 
-    if content_type == "comparacion":
-        if num == 2:
-            return ["$comparative_two_differences"]
-        if num >= 3:
-            return ["$three_items_list", "$comparative_two_differences"]
-        return ["$descriptive_presentation", "$comparative_two_differences"]
-    if content_type == "lista_items":
-        if num == 3:
-            return ["$three_items_list"]
-        if num == 2:
-            return ["$comparative_two_differences", "$three_items_list"]
-        return ["$descriptive_presentation", "$three_items_list"]
-    if content_type == "descripcion":
-        if is_title_only:
-            return ["$chapter_cover_without_number", "$chapter_cover", "$descriptive_presentation"]
-        return ["$descriptive_presentation"]
-    if content_type == "descripcion_sin_titulo":
-        return ["$descriptive_presentation_without_title", "$descriptive_presentation"]
-    if content_type == "portada":
-        return ["$cover_presentation"]
-    if content_type == "capitulo":
-        return ["$chapter_cover"]
-    if content_type == "capitulo_sin_numero":
-        return ["$chapter_cover_without_number", "$chapter_cover"]
-    if content_type == "otro":
-        if is_title_only:
-            return ["$chapter_cover_without_number", "$chapter_cover", "$descriptive_presentation"]
-        return ["$descriptive_presentation"]
-    if num == 2:
-        return ["$comparative_two_differences", "$descriptive_presentation"]
-    if num >= 3:
-        return ["$three_items_list", "$comparative_two_differences"]
-    return ["$descriptive_presentation", "$cover_presentation"]
+    routing = load_context().get("content_type_routing") or {}
+    entry = routing.get(content_type) or routing.get("__fallback__") or {}
+
+    if num == 3 and "exact_items_3" in entry:
+        return entry["exact_items_3"]
+    if num == 2 and "exact_items_2" in entry:
+        return entry["exact_items_2"]
+    if num >= 3 and "min_items_3" in entry:
+        return entry["min_items_3"]
+    if is_title_only and "is_title_only" in entry:
+        return entry["is_title_only"]
+    return entry.get("default") or routing.get("__fallback__", {}).get("default", ["$descriptive_presentation"])
 
 
 # ---------------------------------------------------------------------------

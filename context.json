@@ -92,5 +92,35 @@
     "$three_items_list":                       { "tags": ["$list"] },
     "$comparative_two_differences":            { "tags": ["$comparative"] },
     "$thank_you":                              { "tags": ["$thank_you"] }
+  },
+
+  "content_type_routing": {
+    "portada":                { "default": ["$cover_presentation"] },
+    "capitulo":               { "default": ["$chapter_cover"] },
+    "capitulo_sin_numero":    { "default": ["$chapter_cover_without_number", "$chapter_cover"] },
+    "descripcion_sin_titulo": { "default": ["$descriptive_presentation_without_title", "$descriptive_presentation"] },
+    "descripcion": {
+      "default":       ["$descriptive_presentation"],
+      "is_title_only": ["$chapter_cover_without_number", "$chapter_cover", "$descriptive_presentation"]
+    },
+    "comparacion": {
+      "default":       ["$descriptive_presentation", "$comparative_two_differences"],
+      "exact_items_2": ["$comparative_two_differences"],
+      "min_items_3":   ["$three_items_list", "$comparative_two_differences"]
+    },
+    "lista_items": {
+      "default":       ["$descriptive_presentation", "$three_items_list"],
+      "exact_items_3": ["$three_items_list"],
+      "exact_items_2": ["$comparative_two_differences", "$three_items_list"]
+    },
+    "otro": {
+      "default":       ["$descriptive_presentation"],
+      "is_title_only": ["$chapter_cover_without_number", "$chapter_cover", "$descriptive_presentation"]
+    },
+    "__fallback__": {
+      "default":       ["$descriptive_presentation", "$cover_presentation"],
+      "exact_items_2": ["$comparative_two_differences", "$descriptive_presentation"],
+      "min_items_3":   ["$three_items_list", "$comparative_two_differences"]
+    }
   }
 }

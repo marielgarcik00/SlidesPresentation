@@ -1,52 +1,144 @@
 {
-  "slides_context": {
-    "$cover_presentation": {
-      "finalidad": "Presentación general del tema, título principal y footer corporativo.",
-      "marcadores": {
-        "#main_title": "Nombre del proyecto o título central.",
-        "#footer_context": "Información de la compañía o avisos legales."
+  "tag_definitions": {
+
+    "$cover": {
+      "type": "primary",
+      "description": "Portada o apertura de la presentación",
+      "introduces": {
+        "#main_title":     { "description": "Título principal.", "max_chars": 20 },
+        "#footer_context": { "description": "Footer corporativo.", "max_chars": 8 }
       }
     },
-    "$chapter_cover": {
-      "finalidad": "Numeración de secciones en orden lógico y título de sección.",
-      "marcadores": {
-        "#chapter_number": "Número del capítulo actual (ej: 01, Capítulo 1).",
-        "#section_title": "Nombre de la sección o tema a tratar."
+
+    "$chapter": {
+      "type": "primary",
+      "description": "Apertura de sección o capítulo",
+      "introduces": {
+        "#chapter_number": { "description": "Número de capítulo (ej: 01).", "max_chars": 3 },
+        "#section_title":  { "description": "Nombre de la sección.", "max_chars": 24 }
       }
     },
-    "$descriptive_presentation": {
-      "finalidad": "Desarrollo de un concepto único con título y descripción clara.",
+
+    "$descriptive": {
+      "type": "primary",
+      "description": "Desarrollo de un concepto con texto largo",
+      "introduces": {
+        "#main_title":   { "description": "Título corto que resume el tópico (puede estar al inicio o al final del texto).", "max_chars": 30 },
+        "#description":  { "description": "Párrafo descriptivo: todo el desarrollo, bloques largos, contenido.", "max_chars": 410 }
+      },
       "instrucciones": "main_title = título o tema general (pocas palabras, máx. 3–5). description = todo el desarrollo o cuerpo del texto. NO rellenar por orden: el título puede estar al INICIO o al FINAL del texto.",
-      "few_shot_ejemplo": "Si el texto es 'Monster: es una bebida... Red bull: es otra bebida... Bebidas energeticas' → main_title=\"Bebidas energeticas\", description=\"Monster: es una bebida... Red bull: es otra bebida...\".",
-      "marcadores": {
-        "#main_title": "Título corto que resume el tópico (puede estar al inicio o al final del texto).",
-        "#description": "Párrafo descriptivo: todo el desarrollo, bloques largos, contenido."
-      }
+      "few_shot_ejemplo": "Texto: 'Monster: es una bebida... Red bull: es otra bebida... Bebidas energéticas' → main_title=\"Bebidas energéticas\", description=\"Monster: es una bebida... Red bull: es otra bebida...\""
     },
-    "$three_items_list": {
-      "finalidad": "Tres puntos clave: cada uno con un título y una descripción.",
-      "instrucciones": "Cada clave tiene un SIGNIFICADO: item_1_title = nombre del primer ítem, item_1_description = descripción del primer ítem, etc. Asigná el fragmento que corresponda por significado.",
-      "few_shot_ejemplo": "Entrada: 1. GTM: google tag manager. 2 GA4: Google analitics. 3 PBI: Power BI. -> Salida: item_1_title=\"GTM\", item_1_description=\"google tag manager\", item_2_title=\"GA4\", item_2_description=\"Google analitics\", item_3_title=\"PBI\", item_3_description=\"Power BI\".",
-      "marcadores": {
-        "#item_1_title": "Título o nombre del primer punto.",
-        "#item_1_description": "Descripción del primer punto.",
-        "#item_2_title": "Título o nombre del segundo punto.",
-        "#item_2_description": "Descripción del segundo punto.",
-        "#item_3_title": "Título o nombre del tercer punto.",
-        "#item_3_description": "Descripción del tercer punto."
-      }
+
+    "$list": {
+      "type": "primary",
+      "description": "Enumera ítems con título y descripción",
+      "introduces": {
+        "#item_1_title":       { "description": "Título o nombre del primer punto.", "max_chars": 16 },
+        "#item_1_description": { "description": "Descripción del primer punto.", "max_chars": 422 },
+        "#item_2_title":       { "description": "Título o nombre del segundo punto.", "max_chars": 16 },
+        "#item_2_description": { "description": "Descripción del segundo punto.", "max_chars": 422 },
+        "#item_3_title":       { "description": "Título o nombre del tercer punto.", "max_chars": 16 },
+        "#item_3_description": { "description": "Descripción del tercer punto.", "max_chars": 422 }
+      },
+      "instrucciones": "Cada clave tiene un SIGNIFICADO: item_1_title = nombre del primer ítem, etc. Asigná el fragmento que corresponda por significado.",
+      "few_shot_ejemplo": "Entrada: 1. GTM: google tag manager. 2. GA4: Google analytics. 3. PBI: Power BI → item_1_title=\"GTM\", item_1_description=\"google tag manager\", item_2_title=\"GA4\", ..."
     },
-    "$comparative_two_differences": {
-      "finalidad": "Slide de comparación entre dos temas. Título general y dos temas con nombre y descripción.",
+
+    "$comparative": {
+      "type": "primary",
+      "description": "Compara dos elementos en columnas",
+      "introduces": {
+        "#main_title":           { "description": "SOLO el título general de la slide.", "max_chars": 60 },
+        "#column_1_title":       { "description": "SOLO el nombre del PRIMER tema.", "max_chars": 16 },
+        "#column_1_description": { "description": "SOLO la descripción del PRIMER tema.", "max_chars": 423 },
+        "#column_2_title":       { "description": "SOLO el nombre del SEGUNDO tema.", "max_chars": 16 },
+        "#column_2_description": { "description": "SOLO la descripción del SEGUNDO tema.", "max_chars": 423 }
+      },
       "instrucciones": "NO rellenar en orden. main_title = título general; column_1_title/column_1_description = primer tema; column_2_title/column_2_description = segundo tema.",
-      "few_shot_ejemplo": "Entrada: Frutas. Manzana: roja. Pera: verde. -> Salida: main_title=\"Frutas\", column_1_title=\"Manzana\", column_1_description=\"roja\", column_2_title=\"Pera\", column_2_description=\"verde\"",
-      "marcadores": {
-        "#main_title": "SOLO el título general de la slide. No el contenido de las columnas.",
-        "#column_1_title": "SOLO el nombre del PRIMER tema. No la descripción.",
-        "#column_1_description": "SOLO la descripción del PRIMER tema.",
-        "#column_2_title": "SOLO el nombre del SEGUNDO tema. No la descripción.",
-        "#column_2_description": "SOLO la descripción del SEGUNDO tema."
-      }
+      "few_shot_ejemplo": "Entrada: Frutas. Manzana: roja. Pera: verde. → main_title=\"Frutas\", column_1_title=\"Manzana\", column_1_description=\"roja\", column_2_title=\"Pera\", column_2_description=\"verde\""
+    },
+
+    "$thank_you": {
+      "type": "primary",
+      "description": "Slide final de cierre"
+    },
+
+    "$start": {
+      "type": "primary",
+      "description": "Slide inicial que abre siempre la presentación"
+    },
+
+    "$presentation": {
+      "type": "descriptor",
+      "description": "Slide de presentación visual"
+    },
+
+    "$dark": {
+      "type": "descriptor",
+      "description": "Variante oscura de la slide"
+    },
+
+    "$light": {
+      "type": "descriptor",
+      "description": "Variante clara de la slide"
+    },
+
+    "$nonumber": {
+      "type": "modifier",
+      "description": "Modificador: sin número de capítulo",
+      "removes": ["#chapter_number"]
+    },
+
+    "$notitle": {
+      "type": "modifier",
+      "description": "Modificador: sin título principal",
+      "removes": ["#main_title"]
+    }
+
+  },
+
+  "slides_context": {
+    "$cover_presentation":                     { "tags": ["$cover", "$presentation"] },
+    "$chapter_cover":                          { "tags": ["$chapter", "$cover"] },
+    "$chapter_cover_without_number":           { "tags": ["$chapter", "$cover", "$nonumber"] },
+    "$descriptive_presentation":               { "tags": ["$descriptive", "$presentation"] },
+    "$descriptive_presentation_without_title": { "tags": ["$descriptive", "$presentation", "$notitle"] },
+    "$three_items_list":                       { "tags": ["$list"] },
+    "$comparative_two_differences":            { "tags": ["$comparative"] },
+    "$descriptive_presentation_dark":          { "tags": ["$descriptive", "$presentation", "$dark"] },
+    "$start_light":                            { "tags": ["$start", "$light"] },
+    "$start_dark":                             { "tags": ["$start", "$dark"] },
+    "$thank_you":                              { "tags": ["$thank_you"] }
+  },
+
+  "content_type_routing": {
+    "portada":                { "default": ["$cover_presentation"] },
+    "capitulo":               { "default": ["$chapter_cover"] },
+    "capitulo_sin_numero":    { "default": ["$chapter_cover_without_number", "$chapter_cover"] },
+    "descripcion_sin_titulo": { "default": ["$descriptive_presentation_without_title", "$descriptive_presentation"] },
+    "descripcion": {
+      "default":       ["$descriptive_presentation"],
+      "is_title_only": ["$chapter_cover_without_number", "$chapter_cover", "$descriptive_presentation"]
+    },
+    "comparacion": {
+      "default":       ["$descriptive_presentation", "$comparative_two_differences"],
+      "exact_items_2": ["$comparative_two_differences"],
+      "min_items_3":   ["$three_items_list", "$comparative_two_differences"]
+    },
+    "lista_items": {
+      "default":       ["$descriptive_presentation", "$three_items_list"],
+      "exact_items_3": ["$three_items_list"],
+      "exact_items_2": ["$comparative_two_differences", "$three_items_list"]
+    },
+    "otro": {
+      "default":       ["$descriptive_presentation"],
+      "is_title_only": ["$chapter_cover_without_number", "$chapter_cover", "$descriptive_presentation"]
+    },
+    "__fallback__": {
+      "default":       ["$descriptive_presentation", "$cover_presentation"],
+      "exact_items_2": ["$comparative_two_differences", "$descriptive_presentation"],
+      "min_items_3":   ["$three_items_list", "$comparative_two_differences"]
     }
   }
 }

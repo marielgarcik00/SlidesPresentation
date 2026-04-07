@@ -6,11 +6,17 @@ import re
 from typing import Any, Dict, List
 
 
-def parse_object(raw: str) -> Dict[str, Any]:
-    raw = (raw or "").strip()
+# Elimina bloques de código markdown (```json ... ```) si los hay, para dejar JSON limpio.
+def _strip_markdown(raw: str) -> str:
     if raw.startswith("```"):
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
         raw = re.sub(r"\s*```\s*$", "", raw)
+    return raw
+
+
+# Parsea la respuesta de Gemini como un objeto JSON ({...}). Tolerante a texto extra y backticks.
+def parse_object(raw: str) -> Dict[str, Any]:
+    raw = _strip_markdown((raw or "").strip())
     try:
         out = json.loads(raw)
         return out if isinstance(out, dict) else {}
@@ -25,11 +31,9 @@ def parse_object(raw: str) -> Dict[str, Any]:
     return {}
 
 
+# Parsea la respuesta de Gemini como un array JSON ([...]). También acepta {parts: [...]} como wrapper.
 def parse_array(raw: str) -> List[Dict[str, Any]]:
-    raw = (raw or "").strip()
-    if raw.startswith("```"):
-        raw = re.sub(r"^```(?:json)?\s*", "", raw)
-        raw = re.sub(r"\s*```\s*$", "", raw)
+    raw = _strip_markdown((raw or "").strip())
     try:
         out = json.loads(raw)
         if isinstance(out, list):

@@ -10,15 +10,6 @@ def interpret_default(instruction: str, text: str) -> str:
     return f"{instruction}\n\n{text}"
 
 
-def structure_json(text: str) -> str:
-    return (
-        "Respondé ÚNICAMENTE con un JSON válido, sin texto extra.\n"
-        'Formato: {"content_type":"...","content_type_note":"...","main_title":"...","has_subtitles":false,"subtitles":[{"title":"...","description":"..."}]}\n'
-        "content_type debe ser uno de: comparacion, descripcion, lista_items, portada, capitulo, otro.\n"
-        "Texto:\n" + text
-    )
-
-
 def segment_json(text: str, context_summary: str) -> str:
     base = (
         "Respondé ÚNICAMENTE con un JSON válido, sin texto extra.\n"
@@ -33,6 +24,12 @@ def segment_json(text: str, context_summary: str) -> str:
         "  lista_items → enumera exactamente 3 puntos clave (num_items:3)\n\n"
         "IMPORTANTE: usá capitulo_sin_numero cuando el fragmento es SOLO un título de sección (sin desarrollo). "
         "Usá descripcion cuando hay título + texto explicativo.\n\n"
+        "ESTRUCTURA OBLIGATORIA (siempre, en este orden):\n"
+        "  Parte 0: content_type='portada' — título principal del texto (nombre del tema, empresa o evento).\n"
+        "  Parte 1: content_type='descripcion' — resumen general de todo lo que se va a exponer (mini-índice con los ejes clave).\n"
+        "  Partes intermedias: el resto del contenido, reordenado por vos para que la presentación sea coherente y atractiva "
+        "(no tenés que seguir el orden original del texto; priorizá el flujo narrativo).\n\n"
+        "REGLA: No omitás ningún párrafo ni dato del texto. Podés reformular, pero no eliminar información.\n\n"
     )
     if context_summary:
         base += "Plantillas disponibles:\n" + context_summary[:3500].strip() + "\n\n"

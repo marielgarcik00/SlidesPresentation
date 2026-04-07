@@ -64,9 +64,24 @@
       "description": "Slide final de cierre"
     },
 
+    "$start": {
+      "type": "primary",
+      "description": "Slide inicial que abre siempre la presentación"
+    },
+
     "$presentation": {
       "type": "descriptor",
       "description": "Slide de presentación visual"
+    },
+
+    "$dark": {
+      "type": "descriptor",
+      "description": "Variante oscura de la slide"
+    },
+
+    "$light": {
+      "type": "descriptor",
+      "description": "Variante clara de la slide"
     },
 
     "$nonumber": {
@@ -91,6 +106,9 @@
     "$descriptive_presentation_without_title": { "tags": ["$descriptive", "$presentation", "$notitle"] },
     "$three_items_list":                       { "tags": ["$list"] },
     "$comparative_two_differences":            { "tags": ["$comparative"] },
+    "$descriptive_presentation_dark":          { "tags": ["$descriptive", "$presentation", "$dark"] },
+    "$start_light":                            { "tags": ["$start", "$light"] },
+    "$start_dark":                             { "tags": ["$start", "$dark"] },
     "$thank_you":                              { "tags": ["$thank_you"] }
   },
 

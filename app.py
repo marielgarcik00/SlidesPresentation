@@ -22,7 +22,6 @@ from slides_automation import GoogleSlidesAutomation
 from llm.config import batch_chunk_size
 from llm import (
     ask_gemini,
-    ask_gemini_title_and_subtitles,
     ask_gemini_batch_for_slides,
     ask_gemini_for_slide,
     segment_text_into_parts,
@@ -138,6 +137,45 @@ def run_segment_and_assign(
             "context_template": context_template,
         })
 
+    # Agregar slide de conclusiones al batch (Gemini la genera con contenido real).
+    # Si el contenido desborda, se usará una segunda slide sin título.
+    full_text = " ".join((seg.get("text") or "") for seg in segments)
+    conclusions_slide_index, conclusions_template = find_best_slide_index(
+        slides, ["$descriptive_presentation"], exclude_indices=None
+    )
+    conclusions_overflow_index, conclusions_overflow_template = find_best_slide_index(
+        slides, ["$descriptive_presentation_without_title"], exclude_indices=None
+    )
+    conclusions_fill_idx = None
+    conclusions_overflow_fill_idx = None
+    if conclusions_slide_index is not None and conclusions_template is not None:
+        conclusions_ctx, conclusions_ph = get_template_and_placeholders_by_identifier(conclusions_template)
+        if conclusions_ctx and conclusions_ph:
+            conclusions_fill_idx = len(pending_jobs)
+            conclusions_text = (
+                "Generá las conclusiones principales de toda la presentación. "
+                "Resumí los puntos más importantes, el mensaje final y las ideas clave.\n\n"
+                + full_text[:4000]
+            )
+            pending_jobs.append({
+                "text": conclusions_text,
+                "placeholders": conclusions_ph,
+                "context_template": conclusions_ctx,
+            })
+        # Segunda slide de desborde si hay template sin título
+        if conclusions_overflow_index is not None and conclusions_overflow_template is not None:
+            overflow_ctx, overflow_ph = get_template_and_placeholders_by_identifier(conclusions_overflow_template)
+            if overflow_ctx and overflow_ph:
+                conclusions_overflow_fill_idx = len(pending_jobs)
+                pending_jobs.append({
+                    "text": (
+                        "Continuación de conclusiones — ideas adicionales y puntos secundarios:\n\n"
+                        + full_text[:4000]
+                    ),
+                    "placeholders": overflow_ph,
+                    "context_template": overflow_ctx,
+                })
+
     filled: List[Dict] = []
     if pending_jobs:
         if use_batch:
@@ -199,6 +237,58 @@ def run_segment_and_assign(
             "insert_after_slide": best_index if is_duplicate else None,
         })
 
+    # Agregar slide(s) de conclusiones al final con contenido generado por Gemini
+    if conclusions_slide_index is not None and conclusions_template is not None:
+        json_for_conclusions = (
+            filled[conclusions_fill_idx]
+            if conclusions_fill_idx is not None and conclusions_fill_idx < len(filled)
+            else {}
+        )
+        slides_used.append({
+            "slide_index": conclusions_slide_index,
+            "template": conclusions_template,
+            "json_for_slide": json_for_conclusions,
+            "is_duplicate": True,
+            "insert_after_slide": conclusions_slide_index,
+        })
+        segments_with_slides.append({
+            "part_index": len(segments_with_slides),
+            "content_type": "descripcion",
+            "text_preview": (json_for_conclusions.get("main_title") or "Conclusiones"),
+            "slide_index": conclusions_slide_index,
+            "template": conclusions_template,
+            "json_for_slide": json_for_conclusions,
+            "is_duplicate": True,
+            "insert_after_slide": conclusions_slide_index,
+        })
+        # Segunda slide de conclusiones sin título (si hay contenido adicional)
+        if (
+            conclusions_overflow_index is not None
+            and conclusions_overflow_template is not None
+            and conclusions_overflow_fill_idx is not None
+            and conclusions_overflow_fill_idx < len(filled)
+        ):
+            json_overflow = filled[conclusions_overflow_fill_idx]
+            desc_overflow = (json_overflow.get("description") or "").strip()
+            if desc_overflow:
+                slides_used.append({
+                    "slide_index": conclusions_overflow_index,
+                    "template": conclusions_overflow_template,
+                    "json_for_slide": json_overflow,
+                    "is_duplicate": True,
+                    "insert_after_slide": conclusions_overflow_index,
+                })
+                segments_with_slides.append({
+                    "part_index": len(segments_with_slides),
+                    "content_type": "descripcion_sin_titulo",
+                    "text_preview": desc_overflow[:200],
+                    "slide_index": conclusions_overflow_index,
+                    "template": conclusions_overflow_template,
+                    "json_for_slide": json_overflow,
+                    "is_duplicate": True,
+                    "insert_after_slide": conclusions_overflow_index,
+                })
+
     slides_not_used = sorted(all_indices - used_indices)
     return SegmentAssignResult(
         segments_with_slides=segments_with_slides,
@@ -237,6 +327,10 @@ def resolve_slide_sequence(slides: List[Dict], slides_used: List[Dict]) -> List[
         raise ValueError(
             "No se pudo resolver ninguna plantilla. Revisá que cada ítem tenga 'template'."
         )
+    # Agregar la slide Start al inicio si existe en la plantilla
+    start_index, _ = find_best_slide_index(slides, ["$start_light", "$start_dark", "$start"], exclude_indices=None)
+    if start_index is not None:
+        sequence.insert(0, start_index)
     # Agregar la slide Thank You al final si existe en la plantilla
     thank_you_index, _ = find_best_slide_index(slides, ["$thank_you"], exclude_indices=None)
     if thank_you_index is not None:
@@ -263,6 +357,17 @@ def run_generate_copy_from_segment(
         slide_sequence=slide_sequence,
     )
     new_url = f"https://docs.google.com/presentation/d/{new_id}/edit"
+    # Detectar si se agregó $start al inicio para calcular el offset correcto
+    start_index, _ = find_best_slide_index(slides, ["$start_light", "$start_dark", "$start"], exclude_indices=None)
+    slide_offset = 1 if start_index is not None else 0
+    # Limpiar $start (slide estática, sin marcadores #)
+    if slide_offset:
+        automation.replace_components_in_slide_by_index(
+            presentation_url=new_url,
+            slide_index=0,
+            replacements={},
+            remove_identifiers=True,
+        )
     for i, u in enumerate(slides_used):
         if not isinstance(u, dict):
             continue
@@ -271,13 +376,13 @@ def run_generate_copy_from_segment(
             content = {}
         automation.replace_components_in_slide_by_index(
             presentation_url=new_url,
-            slide_index=i,
+            slide_index=i + slide_offset,
             replacements=content,
             remove_identifiers=True,
         )
     # Limpiar el identificador $thank_you de la última slide (no tiene marcadores #)
-    thank_you_slide_index = len(slides_used)
-    if len(slide_sequence) > len(slides_used):
+    thank_you_slide_index = len(slides_used) + slide_offset
+    if len(slide_sequence) > len(slides_used) + slide_offset:
         automation.replace_components_in_slide_by_index(
             presentation_url=new_url,
             slide_index=thank_you_slide_index,
@@ -345,7 +450,6 @@ async def root():
             "config": "GET /api/config",
             "health": "GET /api/health",
             "ask_gemini": "POST /api/ask-gemini",
-            "ask_gemini_structure": "POST /api/ask-gemini-structure",
             "segment_and_assign": "POST /api/segment-and-assign-slides",
             "generate_copy": "POST /api/generate-copy-from-segment",
         },
@@ -390,22 +494,6 @@ async def ask_gemini_endpoint(request: AskGeminiRequest):
             )
         handle_api_error("ask-gemini", e)
 
-# Pide a Gemini que estructure el texto: content_type, main_title, has_subtitles y lista de subtitles con title/description.
-@app.post("/api/ask-gemini-structure")
-async def ask_gemini_structure_endpoint(request: AskGeminiRequest):
-    try:
-        text = (request.text or "").strip()
-        if not text:
-            raise ValueError("El texto no puede estar vacío.")
-        structured = ask_gemini_title_and_subtitles(text)
-        return {"success": True, "structured": structured}
-    except Exception as e:
-        if _is_quota_error(e):
-            raise HTTPException(
-                status_code=429,
-                detail="Cuota de Vertex AI. «Dividir y asignar» usa pocas llamadas (batch); esperá unos minutos o revisá cuotas en Google Cloud.",
-            )
-        handle_api_error("ask-gemini-structure", e)
 
 #Carga contexto de plantillas. Obtiene las slides de la presentación (con $).
 # Gemini divide el texto en partes por tema/largo. Asigna cada parte a la mejor plantilla y genera el JSON para rellenar cada slide. Devuelve segments y slides_used.

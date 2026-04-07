@@ -43,11 +43,11 @@ def batch_chunk_size() -> int:
 # Devuelve el límite de tokens de salida para cada tipo de llamada (interpret, structure, segment, slide, batch).
 def max_output_tokens(kind: str = "default") -> int:
     caps = {
-        "interpret": int(os.getenv("GEMINI_MAX_TOKENS_INTERPRET", "2048")),
-        "structure": int(os.getenv("GEMINI_MAX_TOKENS_STRUCTURE", "2048")),
+        "interpret": int(os.getenv("GEMINI_MAX_TOKENS_INTERPRET", "8192")),
+        "structure": int(os.getenv("GEMINI_MAX_TOKENS_STRUCTURE", "4096")),
         "segment": int(os.getenv("GEMINI_MAX_TOKENS_SEGMENT", "8192")),
         "slide": int(os.getenv("GEMINI_MAX_TOKENS_SLIDE", "2048")),
-        "batch": int(os.getenv("GEMINI_MAX_TOKENS_BATCH", "8192")),
+        "batch": int(os.getenv("GEMINI_MAX_TOKENS_BATCH", "32768")),
         "default": int(os.getenv("GEMINI_MAX_OUTPUT_TOKENS", "8192")),
     }
     return caps.get(kind, caps["default"])

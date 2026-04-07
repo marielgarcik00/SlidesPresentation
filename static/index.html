@@ -193,16 +193,7 @@
     </div>
 
     <div class="section">
-      <h2>2. Estructura (título y subtítulos)</h2>
-      <p class="muted">Tipo de contenido, título principal y ítems con título/descripción.</p>
-      <div class="step-actions">
-        <button type="button" class="btn" id="btn-structure" data-loading="0">Estructurar</button>
-      </div>
-      <div id="out-structure" class="out json" style="display:none;"></div>
-    </div>
-
-    <div class="section">
-      <h2>3. Dividir y asignar a slides</h2>
+      <h2>2. Dividir y asignar a slides</h2>
       <p class="muted">Usa la plantilla de <code>app_config</code> si el campo URL está vacío.</p>
       <div class="step-actions">
         <button type="button" class="btn" id="btn-segment" data-loading="0">Dividir y asignar</button>
@@ -211,14 +202,14 @@
     </div>
 
     <div class="section">
-      <h2>3.5. JSON que se enviará al generar la presentación</h2>
+      <h2>JSON que se enviará al generar la presentación</h2>
       <p class="muted">Vista previa del payload que se manda al servidor antes de crear la copia en Drive.</p>
       <div id="out-json-preview" class="out json"><span class="muted">Ejecutá «Dividir y asignar» para ver el JSON.</span></div>
     </div>
 
     <div class="section">
-      <h2>4. Generar copia en Drive</h2>
-      <p class="muted">Carpeta por defecto desde <code>app_config</code>. Paso 3 debe estar hecho.</p>
+      <h2>3. Generar copia en Drive</h2>
+      <p class="muted">Carpeta por defecto desde <code>app_config</code>. Paso 2 debe estar hecho.</p>
       <div class="step-actions">
         <button type="button" class="btn" id="btn-generate" data-loading="0">Generar copia</button>
       </div>
@@ -286,20 +277,6 @@
       }
     });
 
-    el("btn-structure").setAttribute("data-original-text", "Estructurar");
-    el("btn-structure").addEventListener("click", async () => {
-      if (!lastInterpretation) { showError("out-structure", "Primero ejecutá «Interpretar» (paso 1)."); return; }
-      setLoading("btn-structure", true);
-      try {
-        const data = await post("/api/ask-gemini-structure", { text: lastInterpretation });
-        showOut("out-structure", JSON.stringify(data.structured || {}, null, 2), true);
-      } catch (e) {
-        showError("out-structure", e.message);
-      } finally {
-        setLoading("btn-structure", false);
-      }
-    });
-
     let lastSegmentPayload = null;
     el("btn-segment").setAttribute("data-original-text", "Dividir y asignar");
     el("btn-segment").addEventListener("click", async () => {
@@ -313,13 +290,14 @@
       try {
         const data = await post("/api/segment-and-assign-slides", { text, presentation_url: el("presentation_url").value.trim() });
         lastSegmentPayload = data;
-        const segments = (data.segments || []).map(s =>
+        const segList = data.segments || [];
+        const segItems = segList.map(s =>
           "<li><strong>" + (s.template || "?") + "</strong> (slide " + (s.slide_index ?? "—") + ") — " + (s.text_preview || "").replace(/</g, "&lt;") + "</li>"
         ).join("");
         const slidesUsed = (data.slides_used || []).length;
         showOut(
           "out-segment",
-          "<p class=\"success\">" + segments.length + " partes, " + slidesUsed + " slides asignadas.</p><ul class=\"card-list\">" + segments + "</ul>",
+          "<p class=\"success\">" + segList.length + " partes, " + slidesUsed + " slides asignadas.</p><ul class=\"card-list\">" + segItems + "</ul>",
           false
         );
         // Mostrar el JSON que se enviará en el paso 4
